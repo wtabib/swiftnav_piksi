@@ -1,7 +1,6 @@
 #include "swiftnav_piksi/piksi_driver.h"
-
-#include <libswiftnav/sbp.h>
-#include <libswiftnav/sbp_messages.h>
+#include <libsbp/system.h>
+#include <libsbp/navigation.h>
 
 #include <iomanip>
 
@@ -107,13 +106,13 @@ namespace swiftnav_piksi
 		sbp_state_init(&state);
 		sbp_state_set_io_context(&state, &piksid);
 
-        sbp_register_callback(&state, SBP_HEARTBEAT, &heartbeatCallback, (void*) this, &heartbeat_callback_node);
-        sbp_register_callback(&state, SBP_GPS_TIME, &timeCallback, (void*) this, &time_callback_node);
+        sbp_register_callback(&state, SBP_MSG_HEARTBEAT, &heartbeatCallback, (void*) this, &heartbeat_callback_node);
+        sbp_register_callback(&state, SBP_MSG_GPS_TIME, &timeCallback, (void*) this, &time_callback_node);
 //		sbp_register_callback(&state, SBP_POS_ECEF, &pos_ecefCallback, (void*) this, &pos_ecef_callback_node);
-        sbp_register_callback(&state, SBP_POS_LLH, &pos_llhCallback, (void*) this, &pos_llh_callback_node);
-        sbp_register_callback(&state, SBP_DOPS, &dops_Callback, (void*) this, &dops_callback_node);
+        sbp_register_callback(&state, SBP_MSG_POS_LLH, &pos_llhCallback, (void*) this, &pos_llh_callback_node);
+        sbp_register_callback(&state, SBP_MSG_DOPS, &dops_Callback, (void*) this, &dops_callback_node);
 //		sbp_register_callback(&state, SBP_BASELINE_ECEF, &baseline_ecefCallback, (void*) this, &baseline_ecef_callback_node);
-        sbp_register_callback(&state, SBP_BASELINE_NED, &baseline_nedCallback, (void*) this, &baseline_ned_callback_node);
+        sbp_register_callback(&state, SBP_MSG_BASELINE_NED, &baseline_nedCallback, (void*) this, &baseline_ned_callback_node);
 //		sbp_register_callback(&state, SBP_VEL_ECEF, &vel_ecefCallback, (void*) this, &vel_ecef_callback_node);
 //		sbp_register_callback(&state, SBP_VEL_NED, &vel_nedCallback, (void*) this, &vel_ned_callback_node);
 
@@ -153,7 +152,7 @@ namespace swiftnav_piksi
 			return;
 		}
 		
-		sbp_heartbeat_t hb = *(sbp_heartbeat_t*) msg;
+		msg_heartbeat_t hb = *(msg_heartbeat_t*) msg;
 
 		class PIKSI *driver = (class PIKSI*) context;
         driver->heartbeat_pub_freq.tick();
@@ -172,7 +171,7 @@ namespace swiftnav_piksi
 
 		class PIKSI *driver = (class PIKSI*) context;
 
-		sbp_gps_time_t time = *(sbp_gps_time_t*) msg;
+		msg_gps_time_t time = *(msg_gps_time_t*) msg;
 
 		sensor_msgs::TimeReferencePtr time_msg( new sensor_msgs::TimeReference );
 
@@ -198,7 +197,7 @@ namespace swiftnav_piksi
 
 		class PIKSI *driver = (class PIKSI*) context;
 
-		sbp_pos_llh_t llh = *(sbp_pos_llh_t*) msg;
+		msg_pos_llh_t llh = *(msg_pos_llh_t*) msg;
 
 		sensor_msgs::NavSatFixPtr llh_msg( new sensor_msgs::NavSatFix );
 
@@ -247,7 +246,7 @@ namespace swiftnav_piksi
 			return;
 		}
 		
-		sbp_dops_t dops = *(sbp_dops_t*) msg;
+		msg_dops_t dops = *(msg_dops_t*) msg;
 
 		class PIKSI *driver = (class PIKSI*) context;
 
@@ -296,7 +295,7 @@ namespace swiftnav_piksi
 
 		class PIKSI *driver = (class PIKSI*) context;
 
-		sbp_baseline_ned_t rtk = *(sbp_baseline_ned_t*) msg;
+		msg_baseline_ned_t rtk = *(msg_baseline_ned_t*) msg;
 
 		nav_msgs::OdometryPtr rtk_odom_msg( new nav_msgs::Odometry );
 

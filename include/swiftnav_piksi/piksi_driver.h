@@ -41,8 +41,7 @@
 
 #include "swiftnav_piksi/piksi.h"
 
-#include <libswiftnav/sbp.h>
-#include <libswiftnav/sbp_messages.h>
+#include <libsbp/sbp.h>
 
 #include <ros/ros.h>
 #include <ros/rate.h>
