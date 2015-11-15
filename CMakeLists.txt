@@ -8,7 +8,7 @@ find_package(catkin REQUIRED COMPONENTS diagnostic_updater roscpp sensor_msgs st
 
 ## System dependencies are found with CMake's conventions
 #find_package(swiftnav REQUIRED)
-find_library(SWIFTNAV swiftnav)
+find_library(SBP sbp)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and scripts declared therein get installed
@@ -76,10 +76,10 @@ add_executable(piksitest src/piksi.c)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(piksi
-  ${SWIFTNAV}
+  ${SBP}
 )
 target_link_libraries(piksitest
-  ${SWIFTNAV}
+  ${SBP}
 )
 target_link_libraries(piksi_driver
   sbp
