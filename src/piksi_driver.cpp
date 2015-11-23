@@ -27,18 +27,18 @@ namespace swiftnav_piksi
         rtk_diag(nh, nh_priv, "ppiksi_rtk_diag"),
 
 		min_llh_rate( 0.5 ),
-		max_llh_rate( 10.0 ),
+		max_llh_rate( 50.0 ),
 		min_rtk_rate( 0.5 ),
-		max_rtk_rate( 10.0 ),
+		max_rtk_rate( 50.0 ),
 		min_heartbeat_rate( 0.5 ),
-		max_heartbeat_rate( 10.0 ),
+		max_heartbeat_rate( 50.0 ),
 
 		llh_pub_freq( diagnostic_updater::FrequencyStatusParam(
-                    &min_llh_rate, &max_llh_rate, 0.1, 10 ) ),
+                    &min_llh_rate, &max_llh_rate, 0.1, 50 ) ),
 		rtk_pub_freq( diagnostic_updater::FrequencyStatusParam( 
-                    &min_rtk_rate, &max_rtk_rate, 0.1, 10 ) ),
+                    &min_rtk_rate, &max_rtk_rate, 0.1, 50 ) ),
 		heartbeat_pub_freq( diagnostic_updater::FrequencyStatusParam( 
-                    &min_rtk_rate, &max_rtk_rate, 0.1, 10 ) ),
+                    &min_rtk_rate, &max_rtk_rate, 0.1, 50 ) ),
 
 		io_failure_count( 0 ),
 		last_io_failure_count( 0 ),
