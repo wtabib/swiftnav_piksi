@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <package>
   <name>swiftnav_piksi</name>
-  <version>0.0.1</version>
+  <version>0.0.3</version>
   <description>Swift Navigation Piksi Driver</description>
 
-  <maintainer email="cbjamo@gmail.com">Caleb Jamison</maintainer>
+  <maintainer email="paul.bouchier@gmail.com">Paul Bouchier</maintainer>
 
   <license>BSD</license>
 

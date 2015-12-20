@@ -49,16 +49,18 @@
 #include <diagnostic_updater/diagnostic_updater.h>
 #include <diagnostic_updater/publisher.h>
 #include <diagnostic_updater/update_functions.h>
+#include <nav_msgs/Odometry.h>
 
 #include <boost/thread.hpp>
 
 namespace swiftnav_piksi
 {
-	void heartbeatCallback(u16 sender_id, u8 len, u8 msg[], void *context);
-	void timeCallback(u16 sender_id, u8 len, u8 msg[], void *context);
-	void pos_llhCallback(u16 sender_id, u8 len, u8 msg[], void *context);
-	void dops_Callback(u16 sender_id, u8 len, u8 msg[], void *context);
-	void baseline_nedCallback(u16 sender_id, u8 len, u8 msg[], void *context);
+	void heartbeat_callback(u16 sender_id, u8 len, u8 msg[], void *context);
+	void time_callback(u16 sender_id, u8 len, u8 msg[], void *context);
+	void pos_llh_callback(u16 sender_id, u8 len, u8 msg[], void *context);
+	void dops_callback(u16 sender_id, u8 len, u8 msg[], void *context);
+	void baseline_ned_callback(u16 sender_id, u8 len, u8 msg[], void *context);
+	void vel_ned_callback(u16 sender_id, u8 len, u8 msg[], void *context);
 
 	class PIKSI
 	{
@@ -103,7 +105,9 @@ namespace swiftnav_piksi
 //		sbp_msg_callbacks_node_t baseline_ecef_callback_node;
 		sbp_msg_callbacks_node_t baseline_ned_callback_node;
 //		sbp_msg_callbacks_node_t vel_ecef_callback_node;
-//		sbp_msg_callbacks_node_t vel_ned_callback_node;
+		sbp_msg_callbacks_node_t vel_ned_callback_node;
+
+        nav_msgs::Odometry rtk_vel_msg; // storage for latest velocity report
 
 		/*
 		 * Diagnostic updater
@@ -157,11 +161,12 @@ namespace swiftnav_piksi
 		ros::Rate spin_rate;
 		boost::thread spin_thread;
 
-		friend void heartbeatCallback(u16 sender_id, u8 len, u8 msg[], void *context);
-		friend void timeCallback(u16 sender_id, u8 len, u8 msg[], void *context);
-		friend void pos_llhCallback(u16 sender_id, u8 len, u8 msg[], void *context);
-		friend void dops_Callback(u16 sender_id, u8 len, u8 msg[], void *context);
-		friend void baseline_nedCallback(u16 sender_id, u8 len, u8 msg[], void *context);
+		friend void heartbeat_callback(u16 sender_id, u8 len, u8 msg[], void *context);
+		friend void time_callback(u16 sender_id, u8 len, u8 msg[], void *context);
+		friend void pos_llh_callback(u16 sender_id, u8 len, u8 msg[], void *context);
+		friend void dops_callback(u16 sender_id, u8 len, u8 msg[], void *context);
+		friend void baseline_ned_callback(u16 sender_id, u8 len, u8 msg[], void *context);
+		friend void vel_ned_callback(u16 sender_id, u8 len, u8 msg[], void *context);
 	};
 }
 

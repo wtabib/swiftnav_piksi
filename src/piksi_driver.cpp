@@ -7,7 +7,6 @@
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/NavSatStatus.h>
 #include <sensor_msgs/TimeReference.h>
-#include <nav_msgs/Odometry.h>
 #include <ros/time.h>
 #include <tf/tf.h>
 
@@ -106,15 +105,15 @@ namespace swiftnav_piksi
 		sbp_state_init(&state);
 		sbp_state_set_io_context(&state, &piksid);
 
-        sbp_register_callback(&state, SBP_MSG_HEARTBEAT, &heartbeatCallback, (void*) this, &heartbeat_callback_node);
-        sbp_register_callback(&state, SBP_MSG_GPS_TIME, &timeCallback, (void*) this, &time_callback_node);
+        sbp_register_callback(&state, SBP_MSG_HEARTBEAT, &heartbeat_callback, (void*) this, &heartbeat_callback_node);
+        sbp_register_callback(&state, SBP_MSG_GPS_TIME, &time_callback, (void*) this, &time_callback_node);
 //		sbp_register_callback(&state, SBP_POS_ECEF, &pos_ecefCallback, (void*) this, &pos_ecef_callback_node);
-        sbp_register_callback(&state, SBP_MSG_POS_LLH, &pos_llhCallback, (void*) this, &pos_llh_callback_node);
-        sbp_register_callback(&state, SBP_MSG_DOPS, &dops_Callback, (void*) this, &dops_callback_node);
+        sbp_register_callback(&state, SBP_MSG_POS_LLH, &pos_llh_callback, (void*) this, &pos_llh_callback_node);
+        sbp_register_callback(&state, SBP_MSG_DOPS, &dops_callback, (void*) this, &dops_callback_node);
 //		sbp_register_callback(&state, SBP_BASELINE_ECEF, &baseline_ecefCallback, (void*) this, &baseline_ecef_callback_node);
-        sbp_register_callback(&state, SBP_MSG_BASELINE_NED, &baseline_nedCallback, (void*) this, &baseline_ned_callback_node);
+        sbp_register_callback(&state, SBP_MSG_BASELINE_NED, &baseline_ned_callback, (void*) this, &baseline_ned_callback_node);
 //		sbp_register_callback(&state, SBP_VEL_ECEF, &vel_ecefCallback, (void*) this, &vel_ecef_callback_node);
-//		sbp_register_callback(&state, SBP_VEL_NED, &vel_nedCallback, (void*) this, &vel_ned_callback_node);
+		sbp_register_callback(&state, SBP_MSG_VEL_NED, &vel_ned_callback, (void*) this, &vel_ned_callback_node);
 
 		llh_pub = nh.advertise<sensor_msgs::NavSatFix>( "gps/fix", 1 );
 		rtk_pub = nh.advertise<nav_msgs::Odometry>( "gps/rtkfix", 1 );
@@ -144,7 +143,7 @@ namespace swiftnav_piksi
 			time_pub.shutdown( );
 	}
 
-	void heartbeatCallback(u16 sender_id, u8 len, u8 msg[], void *context)
+	void heartbeat_callback(u16 sender_id, u8 len, u8 msg[], void *context)
 	{
 		if ( context == NULL )
 		{
@@ -161,7 +160,7 @@ namespace swiftnav_piksi
 		return;
 	}
 
-	void timeCallback(u16 sender_id, u8 len, u8 msg[], void *context)
+	void time_callback(u16 sender_id, u8 len, u8 msg[], void *context)
 	{
 		if ( context == NULL )
 		{
@@ -187,7 +186,7 @@ namespace swiftnav_piksi
 		return;
 	}
 
-	void pos_llhCallback(u16 sender_id, u8 len, u8 msg[], void *context)
+	void pos_llh_callback(u16 sender_id, u8 len, u8 msg[], void *context)
 	{
 		if ( context == NULL )
 		{
@@ -238,7 +237,7 @@ namespace swiftnav_piksi
 		return;
 	}
 
-	void dops_Callback(u16 sender_id, u8 len, u8 msg[], void *context)
+	void dops_callback(u16 sender_id, u8 len, u8 msg[], void *context)
 	{
 		if ( context == NULL )
 		{
@@ -284,7 +283,7 @@ namespace swiftnav_piksi
 		return;
 	}
 */
-	void baseline_nedCallback(u16 sender_id, u8 len, u8 msg[], void *context)
+	void baseline_ned_callback(u16 sender_id, u8 len, u8 msg[], void *context)
 	{
 
 		if ( context == NULL )
@@ -295,7 +294,7 @@ namespace swiftnav_piksi
 
 		class PIKSI *driver = (class PIKSI*) context;
 
-		msg_baseline_ned_t rtk = *(msg_baseline_ned_t*) msg;
+		msg_baseline_ned_t sbp_ned = *(msg_baseline_ned_t*) msg;
 
 		nav_msgs::OdometryPtr rtk_odom_msg( new nav_msgs::Odometry );
 
@@ -304,48 +303,67 @@ namespace swiftnav_piksi
 		rtk_odom_msg->header.stamp = ros::Time::now( );
 
         // convert to meters from mm, and NED to ENU
-		rtk_odom_msg->pose.pose.position.x = rtk.e/1000.0;
-		rtk_odom_msg->pose.pose.position.y = rtk.n/1000.0;
-		rtk_odom_msg->pose.pose.position.z = -rtk.d/1000.0;
+		rtk_odom_msg->pose.pose.position.x = sbp_ned.e/1000.0;
+		rtk_odom_msg->pose.pose.position.y = sbp_ned.n/1000.0;
+		rtk_odom_msg->pose.pose.position.z = -sbp_ned.d/1000.0;
+
+        // Set orientation to 0; GPS doesn't provide orientation
+        rtk_odom_msg->pose.pose.orientation.x = 0;
+        rtk_odom_msg->pose.pose.orientation.y = 0;
+        rtk_odom_msg->pose.pose.orientation.z = 0;
+        rtk_odom_msg->pose.pose.orientation.w = 0;
 
         float h_covariance = 1.0e3;
-        float v_covariance = 1.0e3;
+        float v_covariance = 0.0e3;
 
         // populate the pose covariance matrix if we have a good fix
-        if ( 1 == rtk.flags && 4 < rtk.n_sats)
+        if ( 1 == sbp_ned.flags && 4 < sbp_ned.n_sats)
         {
             // FIXME: h_accuracy doesn't work yet, so use hard-coded 4cm
             // until it does
-            //h_covariance = (rtk.h_accuracy * rtk.h_accuracy) / 1.0e-6;
-            //v_covariance = (rtk.v_accuracy * rtk.v_accuracy) / 1.0e-6;
+            //h_covariance = (sbp_ned.h_accuracy * sbp_ned.h_accuracy) / 1.0e-6;
+            //v_covariance = (sbp_ned.v_accuracy * sbp_ned.v_accuracy) / 1.0e-6;
             h_covariance = driver->rtk_h_accuracy * driver->rtk_h_accuracy;
             v_covariance = driver->rtk_h_accuracy * driver->rtk_h_accuracy;
         }
-            
+
+        // Pose x/y/z covariance is whatever we decided h & v covariance is
         rtk_odom_msg->pose.covariance[0]  = h_covariance;   // x = 0, 0 in the 6x6 cov matrix
         rtk_odom_msg->pose.covariance[7]  = h_covariance;   // y = 1, 1
         rtk_odom_msg->pose.covariance[14] = v_covariance;  // z = 2, 2
 
-        // default rotational velocity to unknown
+        // default angular pose to unknown
         rtk_odom_msg->pose.covariance[21] = 1.0e3;  // x rotation = 3, 3
         rtk_odom_msg->pose.covariance[28] = 1.0e3;  // y rotation = 4, 4
         rtk_odom_msg->pose.covariance[35] = 1.0e3;  // z rotation = 5, 5
 
-        // set up the Twist covariance matrix - gps doesn't provide twist
-        // Question: should I publish x, y, z velocity?
-        rtk_odom_msg->pose.covariance[0]  = 1.0e3;   // x = 0, 0 in the 6x6 cov matrix
-        rtk_odom_msg->pose.covariance[7]  = 1.0e3;   // y = 1, 1
-        rtk_odom_msg->pose.covariance[14] = 1.0e3;  // z = 2, 2
-        rtk_odom_msg->pose.covariance[21] = 1.0e3;  // x rotation = 3, 3
-        rtk_odom_msg->pose.covariance[28] = 1.0e3;  // y rotation = 4, 4
-        rtk_odom_msg->pose.covariance[35] = 1.0e3;  // z rotation = 5, 5
+        // Populate linear part of Twist with last velocity reported: by vel_ned_callback
+        rtk_odom_msg->twist.twist.linear.x = driver->rtk_vel_msg.twist.twist.linear.x;
+        rtk_odom_msg->twist.twist.linear.y = driver->rtk_vel_msg.twist.twist.linear.y;
+        rtk_odom_msg->twist.twist.linear.z = driver->rtk_vel_msg.twist.twist.linear.z;
+
+        // Set angular velocity to 0 - GPS doesn't provide angular velocity
+        rtk_odom_msg->twist.twist.angular.x = 0;
+        rtk_odom_msg->twist.twist.angular.y = 0;
+        rtk_odom_msg->twist.twist.angular.z = 0;
+
+        // set up the Twist covariance matrix
+        // FIXME: I don't know what the covariance of linear velocity should be.
+        // 12/19 asked on swiftnav google group
+        // GPS doesn't provide rotationl velocity
+        rtk_odom_msg->twist.covariance[0]  = 1.0e3;   // x velocity = 0, 0 in the 6x6 cov matrix
+        rtk_odom_msg->twist.covariance[7]  = 1.0e3;   // y velocity = 1, 1
+        rtk_odom_msg->twist.covariance[14] = 1.0e3;  // z velocity = 2, 2
+        rtk_odom_msg->twist.covariance[21] = 1.0e3;  // x rotational velocity = 3, 3
+        rtk_odom_msg->twist.covariance[28] = 1.0e3;  // y rotational velocity = 4, 4
+        rtk_odom_msg->twist.covariance[35] = 1.0e3;  // z rotational velocity = 5, 5
 
 		driver->rtk_pub.publish( rtk_odom_msg );
 
         // save diagnostic data
 		driver->rtk_pub_freq.tick( );
-        driver->rtk_status = rtk.flags;
-        driver->num_rtk_satellites = rtk.n_sats;
+        driver->rtk_status = sbp_ned.flags;
+        driver->num_rtk_satellites = sbp_ned.n_sats;
 		driver->rtk_north = rtk_odom_msg->pose.pose.position.x;
 		driver->rtk_east = rtk_odom_msg->pose.pose.position.y;
         driver->rtk_height = rtk_odom_msg->pose.pose.position.z;
@@ -380,6 +398,7 @@ namespace swiftnav_piksi
 
 		return;
 	}
+*/
 
 	void vel_ned_callback(u16 sender_id, u8 len, u8 msg[], void *context)
 	{
@@ -391,22 +410,18 @@ namespace swiftnav_piksi
 
 		class PIKSI *driver = (class PIKSI*) context;
 
-		sbp_gps_time_t time = *(sbp_gps_time_t*) msg;
+		msg_vel_ned_t sbp_vel = *(msg_vel_ned_t*) msg;
 
-		sensor_msgs::TimeReferencePtr time_msg( new sensor_msgs::TimeReference );
-
-		time_msg->header.frame_id = driver->frame_id;
-		time_msg->header.stamp = ros::Time::now( );
-
-		time_msg->time_ref.sec = time.tow;
-		time_msg->source = "gps";
-
-		driver->time_pub.publish( time_msg );
-		// driver->piksi_pub_freq.tick( );
+        // save velocity in the Twist member of a private Odometry msg, from where it
+        // will be pulled to populate a published Odometry msg next time a
+        // msg_baseline_ned_t message is received
+        driver->rtk_vel_msg.twist.twist.linear.x = sbp_vel.e/1000.0;
+        driver->rtk_vel_msg.twist.twist.linear.y = sbp_vel.n/1000.0;
+        driver->rtk_vel_msg.twist.twist.linear.z = -sbp_vel.d/1000.0;
 
 		return;
 	}
-*/
+
 	void PIKSI::spin( )
 	{
 		while( ros::ok( ) )
