@@ -338,9 +338,9 @@ namespace swiftnav_piksi
         rtk_odom_msg->pose.covariance[35] = 1.0e3;  // z rotation = 5, 5
 
         // Populate linear part of Twist with last velocity reported: by vel_ned_callback
-        rtk_odom_msg->twist.twist.linear.x = driver->rtk_vel_msg.twist.twist.linear.x;
-        rtk_odom_msg->twist.twist.linear.y = driver->rtk_vel_msg.twist.twist.linear.y;
-        rtk_odom_msg->twist.twist.linear.z = driver->rtk_vel_msg.twist.twist.linear.z;
+        rtk_odom_msg->twist.twist.linear.x = driver->rtk_vel_east;
+        rtk_odom_msg->twist.twist.linear.y = driver->rtk_vel_north;
+        rtk_odom_msg->twist.twist.linear.z = driver->rtk_vel_up;
 
         // Set angular velocity to 0 - GPS doesn't provide angular velocity
         rtk_odom_msg->twist.twist.angular.x = 0;
@@ -415,9 +415,9 @@ namespace swiftnav_piksi
         // save velocity in the Twist member of a private Odometry msg, from where it
         // will be pulled to populate a published Odometry msg next time a
         // msg_baseline_ned_t message is received
-        driver->rtk_vel_msg.twist.twist.linear.x = sbp_vel.e/1000.0;
-        driver->rtk_vel_msg.twist.twist.linear.y = sbp_vel.n/1000.0;
-        driver->rtk_vel_msg.twist.twist.linear.z = -sbp_vel.d/1000.0;
+        driver->rtk_vel_north = sbp_vel.n/1000.0;
+        driver->rtk_vel_east = sbp_vel.e/1000.0;
+        driver->rtk_vel_up = -sbp_vel.d/1000.0;
 
 		return;
 	}
@@ -499,6 +499,9 @@ namespace swiftnav_piksi
         stat.add( "GPS RTK meters east", rtk_east );
         stat.add( "GPS RTK height difference (m)", rtk_height );
         stat.add( "GPS RTK horizontal accuracy (m)", rtk_h_accuracy );
+        stat.add( "GPS RTK velocity north", rtk_vel_north );
+        stat.add( "GPS RTK velocity east", rtk_vel_east );
+        stat.add( "GPS RTK velocity up", rtk_vel_up );
         stat.add( "Number of satellites used for lat/lon", num_llh_satellites);
         stat.add( "GPS lat/lon solution status", llh_status );
         stat.add( "GPS latitude", llh_lat );

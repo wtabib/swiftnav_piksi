@@ -107,8 +107,6 @@ namespace swiftnav_piksi
 //		sbp_msg_callbacks_node_t vel_ecef_callback_node;
 		sbp_msg_callbacks_node_t vel_ned_callback_node;
 
-        nav_msgs::Odometry rtk_vel_msg; // storage for latest velocity report
-
 		/*
 		 * Diagnostic updater
 		 */
@@ -157,6 +155,9 @@ namespace swiftnav_piksi
         double rtk_east;
         double rtk_height;
         double rtk_h_accuracy;
+        double rtk_vel_north;
+        double rtk_vel_east;
+        double rtk_vel_up;
 
 		ros::Rate spin_rate;
 		boost::thread spin_thread;
