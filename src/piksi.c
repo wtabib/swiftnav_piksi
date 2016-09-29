@@ -44,6 +44,23 @@
 #include <termios.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <errno.h>
+#include <paths.h>
+#include <sysexits.h>
+#include <sys/param.h>
+#include <sys/select.h>
+#include <sys/time.h>
+#include <time.h>
+#include <CoreFoundation/CoreFoundation.h>
+#include <IOKit/IOKitLib.h>
+#include <IOKit/serial/IOSerialKeys.h>
+#include <IOKit/serial/ioss.h>
+#include <IOKit/IOBSD.h>
+ 
+
+#define B460800 460800
+#define B921600 921600
+#define B1000000 1000000
 
 /*!
  * \brief Maximum number of simultaneously open device handles.
@@ -156,33 +173,60 @@ u32 read_data( u8 *data, u32 num_bytes, void* context )
 int piksi_open( const char *port )
 {
 	/* Step 1: Make sure the device opens OK */
-	int fd = open( port, O_RDWR | O_NOCTTY | O_NDELAY );
+	int fd = open(port, O_RDWR | O_NOCTTY | O_NDELAY );
 	if( fd < 0 )
+	{
+  	printf("Error opening\n");
 		return PIKSI_ERROR_NO_DEVICE;
+	}
 
-	fcntl( fd, F_SETFL, 0 );
+	//fcntl( fd, F_SETFL, 0 );
 
 	struct termios options;
+
+  if (tcgetattr(fd, &options) < 0) {
+    printf("tcgetattr\n");
+    return PIKSI_ERROR_IO;
+  }
+
+  options.c_cflag = CRTSCTS | CS8 | CLOCAL | CREAD;
+  options.c_iflag = IGNPAR;
+  options.c_oflag = 0;
+  options.c_lflag = 0;
+
+  cfsetispeed(&options, B9600);
+  cfsetospeed(&options, B9600);
+
 	cfmakeraw( &options );
-	if( cfsetispeed( &options, B1000000 ) < 0 )
+	/*if( cfsetispeed( &options, B9600) < 0 )
 	{
+		printf("speed problem\n");
 		close( fd );
 		return PIKSI_ERROR_IO;
 	}
-	options.c_cflag &= ~HUPCL;
-	options.c_lflag &= ~ICANON;
+  */
+
 	options.c_cc[VTIME] = 2;
 	options.c_cc[VMIN] = 0;
+
+  tcflush(fd, TCIFLUSH);
+
 	if( tcsetattr( fd, TCSANOW, &options ) < 0 )
 	{
+    printf("%s, %d\n", strerror(errno), errno);
 		close( fd );
 		return PIKSI_ERROR_IO;
 	}
+
+  speed_t baud = 1000000;
+  ioctl(fd, IOSSIOSPEED, &baud);
 
 	/* Step 2: Allocate a private struct */
 	int mydev = next_available_handle( );
 	if( mydev < 0 )
+  {
 		goto close_mem_error;
+  }
 
 	piksi_list[mydev] = malloc( sizeof( struct piksi_priv ) );
 	if( !piksi_list[mydev] )
@@ -196,7 +240,7 @@ int piksi_open( const char *port )
 
 	memcpy( piksi_list[mydev]->port, port, strlen( port ) + 1 );
 	piksi_list[mydev]->fd = fd;
-	piksi_list[mydev]->baud = baud2term( 1000000 );
+	piksi_list[mydev]->baud = baud2term(1000000);
 
 	return mydev;
 
@@ -214,7 +258,9 @@ int piksi_open( const char *port )
 void piksi_close( const int8_t piksid )
 {
 	if( piksid < 0 || piksid > MAX_HANDLES || !piksi_list[piksid] )
+  {
 		return;
+  }
 
 	close( piksi_list[piksid]->fd );
 

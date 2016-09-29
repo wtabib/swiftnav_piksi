@@ -63,7 +63,7 @@ int main( int argc, char *argv[] )
 	ros::NodeHandle nh_priv( "~" );
 
 	std::string port;
-	nh_priv.param( "port", port, (const std::string)"/dev/ttyUSB0" );
+	nh_priv.param( "port", port, (const std::string)"/dev/cu.usbserial-00001014" );
 
 	swiftnav_piksi::PIKSI piksi( nh, nh_priv, port );
 
